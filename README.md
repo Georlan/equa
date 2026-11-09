@@ -26,13 +26,13 @@ As questões são geradas automaticamente, então a partida não tem fim.
 
 ## Executar localmente
 
-Não há bibliotecas, servidor, instalação ou configuração obrigatória: basta abrir o arquivo \`index.html\` no navegador.
+Não há bibliotecas, servidor, instalação ou configuração obrigatória: basta abrir o arquivo `index.html` no navegador.
 
 Para executar os testes automatizados, use Node.js 20 ou superior:
 
-\`\`\`bash
+```bash
 node --test
-\`\`\`
+```
 
 ## Publicar gratuitamente com GitHub Pages
 
@@ -43,6 +43,22 @@ O endereço esperado, após configurar o Pages, é:
 https://georlan.github.io/equa/
 
 > Este endereço só ficará ativo depois que o GitHub Pages for habilitado e o deploy concluído.
+
+## Visual das alternativas
+
+Os quatro botões usam o asset local **[assets/answer-card.png](./assets/answer-card.png)**: PNG RGBA com bordas transparentes, composição preta/vermelha e profundidade.
+
+A imagem funciona como fundo. As letras **A, B, C, D**, os valores das respostas e a seta são desenhados pelo próprio HTML/CSS, portanto mudam corretamente em cada questão sem texto fixo dentro do PNG. Os estados de acerto, erro e foco continuam interativos.
+
+Para carregar essa versão na sua cópia local do projeto:
+
+```bash
+cd ~/equa
+git pull origin main
+python3 -m http.server 8765 --bind 127.0.0.1
+```
+
+Abra **http://127.0.0.1:8765/** e recarregue com **Ctrl + Shift + R**. Se o servidor já estiver rodando na pasta correta, basta dar o `git pull` em outro terminal e recarregar o navegador.
 
 ## Tecnologias
 
