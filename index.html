@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111329">
+  <meta name="description" content="EQUA: resolva equações, escolha entre quatro alternativas e avance a cada acerto.">
+  <title>EQUA — Um desafio por vez</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #171a32;
+      --muted: #6d728a;
+      --purple: #6358dd;
+      --purple-dark: #252045;
+      --purple-light: #eceaff;
+      --line: #e9e9f2;
+      --green: #24a476;
+      --red: #d7526c;
+      --canvas: #f7f7fc;
+      --shadow: 0 26px 65px rgba(30, 28, 74, 0.10);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-synthesis: none;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--canvas); color: var(--ink); min-height: 100vh; }
+    button, select { font: inherit; }
+    button { cursor: pointer; }
+    .page { max-width: 1000px; margin: 0 auto; padding: 27px 28px 42px; }
+    .header, .brand, .controls, .section-top, .score-bar, .stats, .footer, .question-top, .answer, .answer-left {
+      display: flex; align-items: center;
+    }
+    .header { justify-content: space-between; gap: 18px; margin-bottom: 51px; }
+    .brand { gap: 12px; text-decoration: none; color: inherit; }
+    .brand-mark {
+      display: grid; place-items: center; width: 45px; height: 45px;
+      border-radius: 13px; color: #fff; background: var(--purple);
+      font-weight: 900; font-size: 19px; letter-spacing: -2px;
+      box-shadow: 0 8px 18px rgba(99, 88, 221, 0.2);
+    }
+    .brand-name { font-weight: 900; font-size: 23px; letter-spacing: -1.3px; line-height: 1; }
+    .brand-description { font-size: 11px; letter-spacing: 0.3px; color: var(--muted); margin-top: 5px; }
+    .controls { gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .difficulty-wrap {
+      position: relative; display: flex; flex-direction: column; gap: 3px;
+      padding: 8px 35px 8px 15px; border-radius: 13px;
+      background: #fff; border: 1px solid var(--line);
+    }
+    .difficulty-wrap::after { content: "⌄"; position: absolute; right: 14px; top: 17px; pointer-events: none; font-weight: 700; color: var(--purple); }
+    .difficulty-wrap label { font-size: 9px; text-transform: uppercase; font-weight: 900; letter-spacing: 1.5px; color: var(--muted); }
+    select { border: 0; outline: 0; background: transparent; appearance: none; font-size: 13px; color: var(--ink); font-weight: 800; cursor: pointer; }
+    .restart { border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 13px; min-height: 51px; padding: 0 16px; font-size: 13px; font-weight: 750; }
+    .restart:hover { background: var(--purple-light); border-color: #d8d3ff; }
+    .restart:focus-visible, select:focus-visible, .answer:focus-visible { outline: 3px solid #ada6ff; outline-offset: 3px; }
+    main { max-width: 780px; margin: 0 auto; }
+    .eyebrow { color: var(--purple); font-size: 11px; font-weight: 900; letter-spacing: 2.1px; text-transform: uppercase; }
+    h1 { font-size: clamp(30px, 5vw, 44px); letter-spacing: -2px; margin: 10px 0 8px; line-height: 1.12; }
+    .intro { color: var(--muted); font-size: 15px; margin: 0 0 28px; }
+    .stats { gap: 10px; margin-bottom: 17px; }
+    .stat {
+      flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 17px;
+      padding: 17px 21px; min-width: 0;
+    }
+    .stat-label { text-transform: uppercase; font-size: 10px; letter-spacing: 1.25px; font-weight: 850; color: var(--muted); margin-bottom: 5px; }
+    .stat-value { display: block; font-size: 26px; font-weight: 900; line-height: 1.1; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+    .stat:nth-child(2) .stat-value { color: var(--purple); }
+    .question {
+      border-radius: 27px; padding: 27px 33px 39px; color: #fff; overflow: hidden;
+      position: relative; isolation: isolate;
+      background: radial-gradient(circle at 85% 12%, #5650a1 0, transparent 40%), linear-gradient(125deg, #28234b, #17182e);
+      box-shadow: var(--shadow);
+    }
+    .question::before, .question::after { content: ""; position: absolute; z-index: -1; border: 1px solid rgba(255,255,255,.12); width: 325px; height: 325px; border-radius: 50%; right: -120px; top: -185px; }
+    .question::after { width: 240px; height: 240px; right: -78px; top: -142px; background: rgba(255,255,255,.025); }
+    .question-top { justify-content: space-between; gap: 10px; }
+    .question-tag { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 850; letter-spacing: 1.4px; text-transform: uppercase; }
+    .question-tag::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #c5fc89; box-shadow: 0 0 10px #c5fc89; }
+    .question-count { font-size: 12px; color: #d0cce6; font-weight: 750; }
+    .question-hint { margin: 46px 0 10px; text-align: center; color: #c6c3e0; font-size: 14px; }
+    .equation { display: flex; align-items: baseline; justify-content: center; gap: .22em; font-size: clamp(52px, 9vw, 88px); font-weight: 850; letter-spacing: -4px; white-space: nowrap; font-variant-numeric: tabular-nums; line-height: 1.4; }
+    .equation .equals { color: #b8b0ff; }
+    .equation .unknown { color: #c5fc89; }
+    .question-bottom { margin-top: 26px; text-align: center; color: #bab6d0; font-size: 12px; }
+    .section-top { justify-content: space-between; gap: 10px; margin: 28px 0 14px; }
+    h2 { margin: 0; letter-spacing: -.5px; font-size: 19px; }
+    .keyboard { color: var(--muted); font-size: 12px; }
+    kbd { font-family: inherit; font-size: 11px; font-weight: 800; border: 1px solid #dcdbea; border-bottom-width: 2px; border-radius: 5px; padding: 2px 6px; background: white; }
+    .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+    .answer {
+      justify-content: space-between; width: 100%; min-height: 87px; padding: 13px 23px 13px 17px;
+      border: 2px solid #e8e7f1; background: #fff; border-radius: 18px;
+      text-align: left; color: var(--ink); transition: transform .14s, border-color .14s, background .14s, box-shadow .14s;
+    }
+    .answer:not(:disabled):hover { transform: translateY(-2px); border-color: #b2abf9; box-shadow: 0 10px 22px rgba(71, 63, 154, .08); }
+    .answer-left { gap: 19px; }
+    .answer-key { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; background: #f1f0fa; color: #7c77a4; font-weight: 850; font-size: 13px; }
+    .answer-number { font-size: 28px; font-weight: 850; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+    .answer-indicator { color: #b7b5c8; font-size: 24px; font-weight: 500; }
+    .answer.correct { border-color: #46bd95; background: #e7f9f2; color: #147553; }
+    .answer.correct .answer-key { background: #caf0df; color: #147553; }
+    .answer.correct .answer-indicator { color: #14875f; }
+    .answer.wrong { border-color: #e9869b; background: #fff0f3; color: #b43552; }
+    .answer.wrong .answer-key { background: #ffe0e6; color: #b43552; }
+    .answer.wrong .answer-indicator { color: #cb435f; }
+    .answer:disabled { cursor: default; }
+    .answer.wrong:disabled { opacity: .72; }
+    .feedback { display: flex; align-items: center; gap: 9px; min-height: 48px; margin: 15px 2px 8px; font-size: 13px; color: var(--muted); font-weight: 650; }
+    .feedback::before { content: "✦"; color: var(--purple); font-size: 15px; }
+    .feedback[data-state="correct"] { color: #18815e; }
+    .feedback[data-state="correct"]::before { content: "✓"; color: #18815e; }
+    .feedback[data-state="wrong"] { color: #b93555; }
+    .feedback[data-state="wrong"]::before { content: "↻"; color: #b93555; }
+    .progress { background: #e8e7f3; height: 7px; width: 100%; border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #8176ef, #b1a8ff); transition: width .32s ease; }
+    .progress-label { display: flex; justify-content: space-between; margin-top: 9px; gap: 10px; color: var(--muted); font-size: 11px; }
+    .footer { justify-content: center; color: #9c9caf; font-size: 12px; margin-top: 35px; gap: 7px; }
+    @media (max-width: 620px) {
+      .page { padding: 19px 17px 35px; }
+      .header { margin-bottom: 32px; align-items: flex-start; }
+      .brand-description { display: none; }
+      .brand-mark { width: 40px; height: 40px; }
+      .brand-name { font-size: 21px; }
+      .difficulty-wrap { padding: 6px 25px 6px 11px; }
+      .difficulty-wrap::after { right: 9px; top: 13px; }
+      .restart { min-height: 43px; padding: 0 11px; }
+      .controls { gap: 6px; }
+      .intro { font-size: 13px; }
+      .stat { padding: 14px 12px; border-radius: 13px; }
+      .stat-label { font-size: 9px; letter-spacing: .65px; }
+      .stat-value { font-size: 22px; }
+      .question { padding: 21px 20px 32px; border-radius: 21px; }
+      .question-hint { margin-top: 34px; }
+      .equation { font-size: clamp(43px, 10vw, 67px); letter-spacing: -2.5px; }
+      .answers { gap: 10px; }
+      .answer { min-height: 77px; padding: 9px 12px; border-radius: 14px; }
+      .answer-left { gap: 9px; }
+      .answer-key { width: 29px; height: 29px; border-radius: 8px; font-size: 11px; }
+      .answer-number { font-size: 23px; }
+      .answer-indicator { font-size: 18px; }
+      .keyboard { display: none; }
+    }
+    @media (max-width: 360px) {
+      .header { flex-wrap: wrap; }
+      .controls { width: 100%; justify-content: space-between; }
+      .equation { font-size: 40px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <a class="brand" href="./" aria-label="EQUA, início">
+        <span class="brand-mark" aria-hidden="true">=</span>
+        <span><span class="brand-name">equa<span style="color:#6358dd">.</span></span><span class="brand-description" style="display:block">MATEMÁTICA EM JOGO</span></span>
+      </a>
+      <div class="controls">
+        <div class="difficulty-wrap">
+          <label for="difficulty">Dificuldade</label>
+          <select id="difficulty" aria-label="Escolher dificuldade">
+            <option value="easy">Iniciante</option>
+            <option value="medium">Intermediário</option>
+            <option value="hard">Avançado</option>
+          </select>
+        </div>
+        <button class="restart" type="button" id="restart" title="Reiniciar a pontuação">↻ Recomeçar</button>
+      </div>
+    </header>
+    <main>
+      <div class="eyebrow">SEU DESAFIO COMEÇA AGORA ✦</div>
+      <h1>Pense rápido. Acerte mais.</h1>
+      <p class="intro">Resolva a expressão, escolha a resposta certa e avance para a próxima.</p>
+      <section class="stats" aria-label="Sua pontuação">
+        <div class="stat"><div class="stat-label">Acertos</div><strong class="stat-value" id="solved">0</strong></div>
+        <div class="stat"><div class="stat-label">Sequência 🔥</div><strong class="stat-value" id="streak">0</strong></div>
+        <div class="stat"><div class="stat-label">Pontos</div><strong class="stat-value" id="score">0</strong></div>
+      </section>
+      <section class="question" aria-label="Questão atual">
+        <div class="question-top"><span class="question-tag">Resolva a expressão</span><span class="question-count" id="number">QUESTÃO 01</span></div>
+        <p class="question-hint">Quanto é o resultado de...</p>
+        <div class="equation" id="equation" aria-live="polite" aria-atomic="true"></div>
+        <div class="question-bottom">Uma resposta correta desbloqueia a próxima questão.</div>
+      </section>
+      <div class="section-top"><h2>Escolha sua resposta</h2><span class="keyboard">Use <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd></span></div>
+      <section class="answers" id="answers" aria-label="Quatro alternativas"></section>
+      <div class="feedback" id="feedback" data-state="idle" role="status" aria-live="polite">Selecione uma das quatro alternativas.</div>
+      <div class="progress" role="progressbar" aria-label="Progresso do bloco de dez acertos" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0" id="progress"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-label"><span>Progresso do bloco de 10 acertos</span><span id="progress-text">0 / 10</span></div>
+    </main>
+    <footer class="footer">Feito para aprender um acerto de cada vez. <span aria-hidden="true">✦</span> EQUA</footer>
+  </div>
+  <script>
+    "use strict";
+    (() => {
+      const $ = id => document.getElementById(id);
+      const answerArea = $("answers");
+      const difficulty = $("difficulty");
+      const feedback = $("feedback");
+      const state = { solved: 0, streak: 0, score: 0, missed: false, locked: false, question: null, last: "", timer: null };
+      const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+      const shuffle = array => {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = rand(0, i);
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      };
+      function generateQuestion() {
+        const level = difficulty.value;
+        const ops = level === "easy" ? ["+", "−"] : level === "medium" ? ["+", "−", "×"] : ["+", "−", "×", "÷"];
+        let question;
+        for (let attempt = 0; attempt < 30; attempt++) {
+          const op = ops[rand(0, ops.length - 1)];
+          let a, b, answer;
+          if (op === "+") {
+            a = rand(level === "hard" ? 15 : 1, level === "easy" ? 20 : level === "medium" ? 45 : 150);
+            b = rand(1, level === "easy" ? 20 : level === "medium" ? 45 : 150);
+            answer = a + b;
+          } else if (op === "−") {
+            a = rand(level === "hard" ? 20 : 2, level === "easy" ? 25 : level === "medium" ? 60 : 180);
+            b = rand(1, level === "easy" ? 20 : level === "medium" ? 50 : 180);
+            if (level !== "hard" && b > a) [a, b] = [b, a];
+            answer = a - b;
+          } else if (op === "×") {
+            a = rand(2, level === "medium" ? 12 : 18);
+            b = rand(2, level === "medium" ? 12 : 18);
+            answer = a * b;
+          } else {
+            b = rand(2, 15);
+            answer = rand(2, 18);
+            a = b * answer;
+          }
+          question = { a, b, op, answer };
+          if ([a, op, b].join(":") !== state.last) break;
+        }
+        state.last = [question.a, question.op, question.b].join(":");
+        return question;
+      }
+      function generateOptions(correct) {
+        const options = new Set([correct]);
+        const base = Math.max(3, Math.round(Math.abs(correct) * .18));
+        const offsets = [-12, -10, -6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 10, 12, base, -base, base + 2, -base - 2];
+        let attempts = 0;
+        while (options.size < 4 && attempts++ < 100) {
+          const value = correct + offsets[rand(0, offsets.length - 1)];
+          if (difficulty.value === "hard" || value >= 0) options.add(value);
+        }
+        for (let distance = 1; options.size < 4; distance++) options.add(correct + distance);
+        return shuffle([...options]);
+      }
+      function updateStats() {
+        $("solved").textContent = state.solved;
+        $("streak").textContent = state.streak;
+        $("score").textContent = state.score;
+        const progress = state.solved % 10;
+        $("progress-fill").style.width = progress * 10 + "%";
+        $("progress-text").textContent = progress + " / 10";
+        $("progress").setAttribute("aria-valuenow", String(progress));
+      }
+      function setFeedback(message, kind) {
+        feedback.textContent = message;
+        feedback.dataset.state = kind;
+      }
+      function choose(button, value) {
+        if (state.locked || button.disabled) return;
+        if (value === state.question.answer) {
+          state.locked = true;
+          state.solved++;
+          state.streak++;
+          state.score += state.missed ? 5 : 10;
+          button.classList.add("correct");
+          button.querySelector(".answer-indicator").textContent = "✓";
+          answerArea.querySelectorAll("button").forEach(option => { option.disabled = true; });
+          setFeedback("Muito bem! Resposta certa. Próxima questão...", "correct");
+          updateStats();
+          state.timer = window.setTimeout(nextQuestion, 900);
+        } else {
+          if (!state.missed) state.streak = 0;
+          state.missed = true;
+          button.classList.add("wrong");
+          button.querySelector(".answer-indicator").textContent = "×";
+          button.disabled = true;
+          setFeedback("Ainda não! Tente outra alternativa.", "wrong");
+          updateStats();
+        }
+      }
+      function nextQuestion() {
+        state.timer = null;
+        state.locked = false;
+        state.missed = false;
+        state.question = generateQuestion();
+        $("number").textContent = "QUESTÃO " + String(state.solved + 1).padStart(2, "0");
+        const q = state.question;
+        $("equation").replaceChildren();
+        const expression = document.createElement("span");
+        expression.textContent = q.a + " " + q.op + " " + q.b;
+        const equals = document.createElement("span");
+        equals.className = "equals";
+        equals.textContent = "=";
+        const unknown = document.createElement("span");
+        unknown.className = "unknown";
+        unknown.textContent = "?";
+        $("equation").append(expression, equals, unknown);
+        answerArea.replaceChildren();
+        generateOptions(q.answer).forEach((value, index) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "answer";
+          button.setAttribute("aria-label", "Alternativa " + (index + 1) + ": " + value);
+          const left = document.createElement("span");
+          left.className = "answer-left";
+          const key = document.createElement("span");
+          key.className = "answer-key";
+          key.textContent = "ABCD"[index];
+          const number = document.createElement("span");
+          number.className = "answer-number";
+          number.textContent = value;
+          const indicator = document.createElement("span");
+          indicator.className = "answer-indicator";
+          indicator.setAttribute("aria-hidden", "true");
+          indicator.textContent = "›";
+          left.append(key, number);
+          button.append(left, indicator);
+          button.addEventListener("click", () => choose(button, value));
+          answerArea.append(button);
+        });
+        setFeedback("Selecione uma das quatro alternativas.", "idle");
+        updateStats();
+      }
+      function restart() {
+        if (state.timer !== null) window.clearTimeout(state.timer);
+        state.solved = 0;
+        state.streak = 0;
+        state.score = 0;
+        state.last = "";
+        nextQuestion();
+      }
+      $("restart").addEventListener("click", restart);
+      difficulty.addEventListener("change", restart);
+      document.addEventListener("keydown", event => {
+        if (event.altKey || event.ctrlKey || event.metaKey || event.repeat || event.target === difficulty) return;
+        const index = ["1", "2", "3", "4"].indexOf(event.key);
+        if (index !== -1 && !state.locked) {
+          const option = answerArea.querySelectorAll("button")[index];
+          if (option && !option.disabled) option.click();
+        }
+      });
+      nextQuestion();
+    })();
+  </script>
+</body>
+</html>
