@@ -179,3 +179,16 @@ test("teclas 1 a 4 podem escolher alternativas", () => {
   });
   assert.equal(Number(game.get("solved").textContent), 1);
 });
+
+
+test("os botões usam PNG RGBA transparente e preservam rótulos dinâmicos", () => {
+  const png = readFileSync(new URL("../assets/answer-card.png", import.meta.url));
+  assert.equal(png.subarray(0, 8).toString("hex"), "89504e470d0a1a0a", "Assinatura PNG válida");
+  assert.equal(png[25], 6, "PNG em RGBA (suporta transparência por pixel)");
+  assert.match(html, /assets\/answer-card\.png/, "Interface aponta para o asset");
+  const game = startGame();
+  const buttons = game.buttons();
+  assert.equal(buttons.length, 4);
+  assert.deepEqual(buttons.map(b => b.querySelector(".answer-key").textContent), ["A", "B", "C", "D"]);
+  assert.equal(choices(game).filter(n => n === expectedAnswer(game)).length, 1);
+});
